@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Plebian-OS angular P geek logo</title>
+  <desc id="desc">An angular P-shaped geek face with one dot eye, two hairs, and an orange terminal prompt and underscore.</desc>
+  <g fill="none" stroke="#aac5da" stroke-width="36" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M92 446V104H314L422 212 314 320H211L92 446Z"/>
+    <path d="M122 83L91 39"/>
+    <path d="M171 82L159 25"/>
+  </g>
+  <circle cx="319" cy="180" r="18" fill="#aac5da"/>
+  <g fill="none" stroke="#ff9f0a" stroke-width="28" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M163 164L222 218 163 272"/>
+    <path d="M253 272H323"/>
+  </g>
+</svg>

@@ -1,0 +1,9 @@
+{
+  "project": "DejaVu fonts",
+  "version": "2.37",
+  "distribution_package": "fonts-dejavu-core 2.37-8",
+  "files": {
+    "DejaVuSans.ttf": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e",
+    "DejaVuSans-Bold.ttf": "a4c5bc453ca281d90ea079e596da7ae0dfeb5777497c29ec254e76d97ff6f890"
+  }
+}

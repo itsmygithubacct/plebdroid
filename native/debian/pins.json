@@ -1,0 +1,72 @@
+{
+  "format": 1,
+  "target": {
+    "abi": "arm64-v8a",
+    "api": 29,
+    "triple": "aarch64-linux-android29",
+    "page_size": 16384
+  },
+  "ndk": {
+    "revision": "30.0.16248370"
+  },
+  "proot": {
+    "upstream": "https://github.com/termux/proot",
+    "tag": "v5.1.107.101",
+    "commit": "b27d81a68d765f3462e807f4a14e01a03f8e89ea",
+    "url": "https://github.com/termux/proot/archive/v5.1.107.101.zip",
+    "sha256": "a66743f50c7b0bac1913b83bf55e139d679c80a0ca2808eec76432a65640017f",
+    "top": "proot-5.1.107.101",
+    "version_define": "5.1.107.101",
+    "patches": [
+      "patches/proot-0001-ashmem-memfd-string-h.patch"
+    ],
+    "license": "GPL-2.0-or-later",
+    "notice": "notices/debian/PRoot-COPYING.txt"
+  },
+  "talloc": {
+    "upstream": "https://talloc.samba.org/",
+    "url": "https://www.samba.org/ftp/talloc/talloc-2.5.0.tar.gz",
+    "sha256": "912afa237510ae542a7733998eb18a12bcda35ab6729c8e2ddb43e8d0ebab007",
+    "top": "talloc-2.5.0",
+    "cross_answers": "talloc-cross-answers.txt",
+    "objects": [
+      "talloc.c",
+      "lib/replace/replace.c",
+      "lib/replace/closefrom.c"
+    ],
+    "license": "LGPL-3.0-or-later",
+    "notice": "notices/debian/talloc-LGPL-3.0.txt"
+  },
+  "outputs": {
+    "libproot.so": "02a00127de210ba32e42deb3ad9862e08423779549f7896662d1b5ba31ff213a",
+    "libproot_loader.so": "28398e47d4c19a6837b3d47c1cb6d7fce2cd2ed14966f62ffe93ce8ad7bc34c3"
+  },
+  "rootfs": {
+    "distribution": "Debian 13.7 (trixie) arm64",
+    "snapshot": "20261027T000000Z",
+    "archive": "https://snapshot.debian.org/archive/debian/20261027T000000Z/",
+    "security_archive": "https://snapshot.debian.org/archive/debian-security/20261027T000000Z/",
+    "release_sha256": "0584fba32e13e0ab8285fb16c27adea1ec03a73669c18702821094fd6ca86675",
+    "security_release_sha256": "dfab8e28ea58bbf3bc3840bbd099d3e52ed44f72e447220e0b1b7c12ab0c0baf",
+    "builder": "mmdebstrap 1.5.7 --mode=unshare --variant=apt",
+    "include": [
+      "ca-certificates",
+      "bash-completion",
+      "less",
+      "nano",
+      "procps",
+      "locales",
+      "tzdata"
+    ],
+    "tar_sha256": "c621d002e6280bc8ebd68992c087bf493cd7a1b6c58709ece62c3ffd9c328011",
+    "tar_bytes": 171671040,
+    "regular_file_bytes": 165980281,
+    "members": 7913,
+    "packages": 80,
+    "compressor": "xz 5.8.1: xz -9 -T4 (single block)",
+    "xz_sha256": "8c97363ebd6bf120f3b76fce6efa21bb109c7d34eeffb7dc9786a9d12c52917e",
+    "xz_bytes": 34598288,
+    "asset": "debian/rootfs.tar.xz",
+    "identity": "hostname plebdroid, neutral /etc/hosts, placeholder /etc/resolv.conf, /root/Documents"
+  }
+}

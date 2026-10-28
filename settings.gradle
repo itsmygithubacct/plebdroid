@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories { google(); mavenCentral() }
+}
+rootProject.name = 'plebdroid'
+def adapter = providers.gradleProperty('kilixAndroidSource').orNull
+if (!adapter || !new File(adapter, 'runtime/build.gradle').isFile()) {
+    throw new GradleException('Set -PkilixAndroidSource to the Kilix Android source with the runtime library')
+}
+include ':app', ':kilixRuntime'
+project(':kilixRuntime').projectDir = new File(adapter, 'runtime')

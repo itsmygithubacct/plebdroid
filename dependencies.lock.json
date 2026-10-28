@@ -1,0 +1,47 @@
+{
+  "format": 1,
+  "status": "local-development-candidates-unpublished",
+  "components": {
+    "android": {
+      "revision": "4330b135577ab55ccb02117472ac8b697e191f9a"
+    },
+    "engine": {
+      "revision": "270fa4a07204571774e7a1b9504819480a4544f0"
+    },
+    "desktop": {
+      "revision": "820fd79ab871a8198f9d2b1993909ae289389897"
+    },
+    "host": {
+      "revision": "480212514895ebaa3c5cb49ba3203aa1ef4479a1"
+    },
+    "state": {
+      "revision": "cac25a6d6d2036fa5e36855f4ba36ccdfb88af32"
+    },
+    "content": {
+      "revision": "8f6182cf69ea1e941af6815a9d56cc590bc8102e"
+    },
+    "presenter": {
+      "revision": "fa770639eab1f1c1307ecb0a651b8a2a301eec49"
+    },
+    "broker": {
+      "revision": "8bdb5e65130b40eb0c3d7a0e6d90c93331589516"
+    },
+    "touch": {
+      "revision": "24234fb380bd7eabbeaca768536a68c8771c8536"
+    },
+    "mux": {
+      "revision": "7bc9d58f13dc30a691d2e36ef012ad4a91bd4e0c"
+    },
+    "games": {
+      "revision": "343ca3f9475091d4de465e1f5fe4d33aad25a665"
+    },
+    "game-kit": {
+      "revision": "e74c94baf75eb498a01cc3577a26db425c73d8e6",
+      "subdirectory": "kilix-game-kit",
+      "recursive": true
+    },
+    "framebuffer": {
+      "revision": "7f5a0fa1c718419a5b54a57c0c4da642364e892e"
+    }
+  }
+}

@@ -1,0 +1,118 @@
+plugins { id 'com.android.application' }
+
+def requiredSource = { String name ->
+    def value = providers.gradleProperty(name).orNull
+    if (!value) throw new GradleException("Set -P${name} to the corresponding source or prefix")
+    return new File(value).canonicalPath
+}
+def desktop = requiredSource('kilixDesktopSource')
+def host = requiredSource('kilixHostSource')
+def state = requiredSource('kilixStateSource')
+def content = requiredSource('kilixContentSource')
+def presenter = requiredSource('kilixFramePresenterSource')
+def adapter = requiredSource('kilixAndroidSource')
+def python = requiredSource('kilixPythonPrefix')
+def nativeDeps = requiredSource('kilixNativeDependencies')
+def debianRootfs = requiredSource('plebdroidDebianRootfs')
+def sdkRoot = System.getenv('ANDROID_SDK_ROOT') ?: System.getenv('ANDROID_HOME')
+if (!sdkRoot) throw new GradleException('Set ANDROID_SDK_ROOT for the Android build')
+
+android {
+    namespace 'io.github.itsmygithubacct.plebdroid'
+    compileSdk 36
+    buildToolsVersion '36.0.0'
+    ndkVersion '30.0.16248370'
+    defaultConfig {
+        applicationId 'io.github.itsmygithubacct.plebdroid'
+        minSdk 29
+        targetSdk 36
+        versionCode 1
+        versionName '0.1.0-dev'
+        testInstrumentationRunner 'io.github.itsmygithubacct.plebdroid.PlebdroidTest'
+        ndk { abiFilters 'arm64-v8a' }
+    }
+    buildTypes {
+        debug { debuggable true }
+        release { minifyEnabled false }
+    }
+    packaging { jniLibs { useLegacyPackaging = true } }
+    androidResources { noCompress += ['xz'] }
+    sourceSets.main.assets.srcDir(layout.buildDirectory.dir('generated/desktop/assets'))
+    sourceSets.main.jniLibs.srcDir(layout.buildDirectory.dir('generated/desktop/jniLibs'))
+}
+
+dependencies { implementation project(':kilixRuntime') }
+
+def verifySources = tasks.register('verifyPlebdroidSources', Exec) {
+    def sources = [android: adapter, desktop: desktop, host: host, state: state,
+        content: content, presenter: presenter, engine: requiredSource('kilixEngineSource'),
+        broker: requiredSource('kilixPtyBrokerSource'), touch: requiredSource('kilixTouchSource'),
+        mux: requiredSource('kilixMuxSource'), games: requiredSource('kilixGamesSource'),
+        'game-kit': requiredSource('kilixGameKitSource'), framebuffer: requiredSource('kilixFramebufferSource')]
+    def command = ['python3', new File(adapter, 'tools/verify_source_pins.py'),
+        '--lock', file('../dependencies.lock.json'),
+        '--output', layout.buildDirectory.file('verified-sources.json').get().asFile]
+    sources.each { name, path -> command.addAll(['--source', "${name}=${path}"]) }
+    commandLine command
+    outputs.upToDateWhen { false }
+}
+tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn(verifySources) }
+if (providers.gradleProperty('kilixVerifyPins').orNull == 'true') {
+    tasks.named('preBuild').configure { dependsOn(verifySources) }
+}
+
+def pythonApps = tasks.register('buildPythonApps', Exec) {
+    inputs.files('../tools/build_python_apps.py', '../native/python_app.c')
+    inputs.files(fileTree(state) { include 'src/**', 'include/**', 'Makefile', 'LICENSE' })
+    inputs.files(fileTree(python) { include 'include/**', 'lib/libpython*', 'lib/python3.14/_sysconfigdata*' })
+    inputs.files(fileTree(nativeDeps) { include 'include/**', 'lib/**' })
+    outputs.dir(layout.buildDirectory.dir('generated/python-apps'))
+    def cache = providers.gradleProperty('plebdroidNativeCache').orElse(
+        layout.buildDirectory.dir('native/python-apps').get().asFile.path)
+    commandLine 'python3', file('../tools/build_python_apps.py'),
+        '--ndk', new File(sdkRoot, 'ndk/30.0.16248370'), '--python', python,
+        '--deps', nativeDeps, '--state', state, '--cache', cache.get(),
+        '--output', layout.buildDirectory.dir('generated/python-apps').get().asFile
+}
+
+def prepareDesktop = tasks.register('prepareDesktop', Exec) {
+    dependsOn(pythonApps, 'buildDebianRuntime', ':kilixRuntime:prepareRuntime')
+    inputs.files('../tools/prepare_desktop.py', '../LICENSE', '../THIRD_PARTY_NOTICES.md')
+    inputs.dir('../notices')
+    inputs.dir('../assets/fonts')
+    inputs.dir('../runtime/debian')
+    [desktop, host, state, content, presenter].each { source ->
+        inputs.files(fileTree(source) {
+            exclude '.git/**', '**/__pycache__/**', '**/build/**', '**/*.pyc'
+        })
+    }
+    inputs.dir(layout.buildDirectory.dir('generated/python-apps'))
+    inputs.dir(layout.buildDirectory.dir('generated/debian'))
+    def base = project(':kilixRuntime').layout.buildDirectory.file('generated/runtime/assets/runtime.zip')
+    inputs.file(base)
+    outputs.dir(layout.buildDirectory.dir('generated/desktop'))
+    commandLine 'python3', file('../tools/prepare_desktop.py'),
+        '--base-runtime', base.get().asFile, '--desktop', desktop, '--host', host,
+        '--state', state, '--content', content, '--presenter', presenter,
+        '--python-apps', layout.buildDirectory.dir('generated/python-apps').get().asFile,
+        '--debian-runtime', layout.buildDirectory.dir('generated/debian').get().asFile,
+        '--python', python, '--output', layout.buildDirectory.dir('generated/desktop').get().asFile
+}
+def debianRuntime = tasks.register('buildDebianRuntime', Exec) {
+    inputs.file('../tools/build_debian_runtime.py')
+    inputs.dir('../native/debian')
+    inputs.dir('../notices/debian')
+    inputs.file(debianRootfs)
+    outputs.dir(layout.buildDirectory.dir('generated/debian'))
+    def cache = providers.gradleProperty('plebdroidDebianCache').orElse(
+        layout.buildDirectory.dir('native/debian').get().asFile.path)
+    commandLine 'python3', file('../tools/build_debian_runtime.py'),
+        '--ndk', new File(sdkRoot, 'ndk/30.0.16248370'), '--cache', cache.get(),
+        '--rootfs', debianRootfs,
+        '--output', layout.buildDirectory.dir('generated/debian').get().asFile
+}
+tasks.named('preBuild').configure { dependsOn(prepareDesktop) }
+[pythonApps, debianRuntime, prepareDesktop].each { it.configure { mustRunAfter(verifySources) } }
+project(':kilixRuntime').tasks.matching {
+    it.name in ['prepareRuntime', 'compileProbeHelper', 'compileBroker', 'compileKmxClient', 'compileLights']
+}.configureEach { mustRunAfter(verifySources) }
