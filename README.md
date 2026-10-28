@@ -167,6 +167,21 @@ address-configuration filter so an offline device can reach a loopback
 proxy over ADB reverse. HTTPS certificate and package-signature checks remain
 enabled. Record proxy use separately from direct network qualification.
 
+The startup lifecycle check requires host Pillow and a debug APK using the
+default teal desktop. It stops Plebdroid, preserves application data, exercises
+sleep and wake, and requires the same application process to render the desktop
+afterward. It leaves the device awake. Keep its evidence outside the checkout:
+
+```sh
+python3 tools/test_startup_lifecycle.py --serial DEVICE_SERIAL \
+  --case asleep-start --output /path/to/evidence/asleep-start
+python3 tools/test_startup_lifecycle.py --serial DEVICE_SERIAL \
+  --case interrupt-start --output /path/to/evidence/interrupt-start
+```
+
+Use `--case awake-start` as the control and `--adb /path/to/adb` when ADB is not
+on the host's PATH. Review the screenshots and engine log as well as the result.
+
 ## License
 
 Plebdroid source is GPL-3.0-only. See `LICENSE` and
