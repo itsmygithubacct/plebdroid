@@ -3,7 +3,7 @@
   "status": "local-development-candidates-unpublished",
   "components": {
     "android": {
-      "revision": "4330b135577ab55ccb02117472ac8b697e191f9a"
+      "revision": "41d861a53de2b1693979a2a08ed35e9152bcbe2f"
     },
     "engine": {
       "revision": "270fa4a07204571774e7a1b9504819480a4544f0"

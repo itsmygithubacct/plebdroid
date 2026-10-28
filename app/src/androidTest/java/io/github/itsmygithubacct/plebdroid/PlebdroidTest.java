@@ -275,6 +275,7 @@ public final class PlebdroidTest extends Instrumentation {
             for (int i = 0; i < 3; i++) request("Desktop");
             require(desktopProcesses().equals(desktop), "Desktop button duplicated the desktop process");
             passed.add("Desktop refocuses its existing process");
+            verifySessionService(desktop);
 
             request("Terminal"); connectInput();
             File proof = new File(files, "terminal-proof.txt");
@@ -367,6 +368,28 @@ public final class PlebdroidTest extends Instrumentation {
         return false;
     }
 
+    private void verifySessionService(List<Integer> desktop) {
+        boolean previous = SessionService.isEnabled(getTargetContext());
+        try {
+            runOnMainSync(() -> SessionService.enable(activity));
+            await(this::backgroundServiceRunning, "Session service did not enter foreground");
+            runOnMainSync(() -> SessionService.disable(activity));
+            await(() -> !backgroundServiceRunning(), "Session service did not stop");
+            require(!SessionService.isEnabled(activity), "Disable did not persist the user's choice");
+            // A quick toggle must also satisfy Android's requirement to enter
+            // foreground before cancelling a queued startForegroundService.
+            runOnMainSync(() -> { SessionService.enable(activity); SessionService.disable(activity); });
+            SystemClock.sleep(6000);
+            require(!backgroundServiceRunning() && !SessionService.isEnabled(activity), "Queued service cancellation failed");
+            require(desktopProcesses().equals(desktop), "Background toggle interrupted desktop sessions");
+            passed.add("foreground service starts, stops and handles a quick toggle without restarting sessions");
+        } finally {
+            runOnMainSync(() -> {
+                if (previous) SessionService.enable(activity); else SessionService.disable(activity);
+            });
+        }
+    }
+
     private void runDebianChecks() {
         Bundle result = new Bundle();
         JSONObject report = new JSONObject();
@@ -377,7 +400,10 @@ public final class PlebdroidTest extends Instrumentation {
             await(() -> new File(files, "engine-ready").isFile(), "Engine did not start", 240000);
             await(() -> desktopProcesses().size() == 1, "Desktop did not start");
             File rootfs = new File(files, "debian/rootfs");
-            report.put("installed_before", rootfs.isDirectory());
+            boolean installedBefore = rootfs.isDirectory();
+            String previousInstall = read(new File(files, "debian/installed.json"));
+            report.put("installed_before", installedBefore)
+                .put("hello_before", new File(rootfs, "usr/bin/hello").isFile());
             request("Debian");
             await(this::backgroundServiceRunning, "Debian did not enable its foreground service");
             passed.add("Debian button opens a terminal and enables the foreground session service");
@@ -392,7 +418,10 @@ public final class PlebdroidTest extends Instrumentation {
                 await(() -> rootfs.isDirectory() && new File(files, "debian/installed.json").isFile(),
                     "Debian installation did not finish: " + read(new File(files, "debian/last-error.txt")), 180000);
                 require(applicationProcesses("debian").size() == 1, "Debian launcher exited");
-                passed.add("packaged Debian rootfs installs under the real Android app UID");
+                if (installedBefore) {
+                    require(read(new File(files, "debian/installed.json")).equals(previousInstall), "Opening Debian replaced its existing install record");
+                    passed.add("existing Debian rootfs and install record are preserved");
+                } else passed.add("packaged Debian rootfs installs under the real Android app UID");
                 connectInput(); SystemClock.sleep(1500);
                 String prefix = "debian-qualification-" + UUID.randomUUID();
                 File documents = new File(files, "home/Documents");
@@ -400,7 +429,8 @@ public final class PlebdroidTest extends Instrumentation {
                 File exit = new File(documents, prefix + ".exit");
                 File script = new File(rootfs, "root/" + prefix + ".sh");
                 String network = aptProxy.isEmpty() ? "" : " -o Acquire::http::Proxy=" + quote(aptProxy)
-                    + " -o Acquire::https::Proxy=" + quote(aptProxy);
+                    + " -o Acquire::https::Proxy=" + quote(aptProxy)
+                    + " -o Acquire::Connect::AddrConfig=false";
                 String content = "set -eu\nuname -m\ndpkg --print-architecture\nid\ncat /etc/resolv.conf\n"
                     + "apt-get" + network + " -o APT::Update::Error-Mode=any -o Acquire::Languages=none -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update\n"
                     + "DEBIAN_FRONTEND=noninteractive apt-get" + network + " -y install hello\nhello\n"
