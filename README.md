@@ -60,6 +60,12 @@ not all available from public remotes yet. Kilix Android's
 The Python prefix must contain the standard library, headers, `libpython`
 and its OpenSSL and SQLite libraries.
 
+The shared Android runtime downloads Symbols Nerd Font Mono from its pinned
+upstream release. Its helper verifies both the archive and font hashes and
+packages the font with its notices. The first build needs HTTPS access to
+GitHub, or the verified archive in the runtime's `build/downloads/symbol-font`
+cache. Cleaning that runtime's build directory also removes this cache.
+
 Build the pinned Debian image with `tools/build_debian_rootfs.sh OUTPUT_DIR`.
 It requires mmdebstrap 1.5.7, xz 5.8.1, Debian archive keys, qemu-user-binfmt
 and unprivileged user namespaces with subordinate UID/GID ranges. Its
@@ -140,6 +146,12 @@ report and rendered screenshots before claiming the desktop works on a
 device. ARM64 translation on an x86 emulator does not qualify a physical
 ARM64 device. Minimum-API and physical 16 KiB device support remain unverified.
 
+Add `-e apps true` to check touch-opened Notepad, committed Unicode text,
+Enter and Tab, and Calculator input. Review the Calculator screenshot for
+the expected result, 42. The base suite also measures the rendered cursor
+against touchscreen coordinates and checks foreground-service start, stop
+and rapid cancellation without restarting the desktop.
+
 Add `-e debian true` to the instrumentation command for the Debian checks.
 On native ARM64 this installs Debian if absent, runs `apt update`, installs
 the small `hello` package, checks Documents in both directions and across
@@ -147,6 +159,13 @@ sessions, and exercises a background child with the foreground service.
 It retains the installed package and qualification documents. On an x86
 emulator it checks that ARM translation is explained before installation;
 translated PRoot is unsupported. The result is `plebdroid-debian-test.json`.
+
+For a test device reached through a network proxy, add `-e apt_proxy URL`.
+This passes the proxy only to the qualification commands, without changing
+Debian's saved APT configuration. In that mode the test disables APT's
+address-configuration filter so an offline device can reach a loopback
+proxy over ADB reverse. HTTPS certificate and package-signature checks remain
+enabled. Record proxy use separately from direct network qualification.
 
 ## License
 

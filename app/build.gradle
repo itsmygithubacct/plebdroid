@@ -114,5 +114,5 @@ def debianRuntime = tasks.register('buildDebianRuntime', Exec) {
 tasks.named('preBuild').configure { dependsOn(prepareDesktop) }
 [pythonApps, debianRuntime, prepareDesktop].each { it.configure { mustRunAfter(verifySources) } }
 project(':kilixRuntime').tasks.matching {
-    it.name in ['prepareRuntime', 'compileProbeHelper', 'compileBroker', 'compileKmxClient', 'compileLights']
+    it.name in ['prepareSymbolFont', 'prepareRuntime', 'compileProbeHelper', 'compileBroker', 'compileKmxClient', 'compileLights']
 }.configureEach { mustRunAfter(verifySources) }
