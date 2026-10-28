@@ -406,6 +406,9 @@ public final class PlebdroidTest extends Instrumentation {
                 .put("hello_before", new File(rootfs, "usr/bin/hello").isFile());
             request("Debian");
             await(this::backgroundServiceRunning, "Debian did not enable its foreground service");
+            // Opening a tab is acknowledged before its PTY child reaches
+            // exec. An existing rootfs does not provide a startup wait.
+            await(() -> applicationProcesses("debian").size() == 1, "Debian launcher did not start");
             passed.add("Debian button opens a terminal and enables the foreground session service");
             if (!android.os.Build.SUPPORTED_ABIS[0].equals("arm64-v8a")) {
                 await(() -> read(new File(files, "debian/last-error.txt")).contains("ARM translation"),
