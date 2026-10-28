@@ -402,6 +402,8 @@ public final class PlebdroidTest extends Instrumentation {
             File rootfs = new File(files, "debian/rootfs");
             boolean installedBefore = rootfs.isDirectory();
             String previousInstall = read(new File(files, "debian/installed.json"));
+            File launcherError = new File(files, "debian/last-error.txt");
+            long previousErrorTime = launcherError.lastModified();
             report.put("installed_before", installedBefore)
                 .put("hello_before", new File(rootfs, "usr/bin/hello").isFile());
             request("Debian");
@@ -411,10 +413,12 @@ public final class PlebdroidTest extends Instrumentation {
             await(() -> applicationProcesses("debian").size() == 1, "Debian launcher did not start");
             passed.add("Debian button opens a terminal and enables the foreground session service");
             if (!android.os.Build.SUPPORTED_ABIS[0].equals("arm64-v8a")) {
-                await(() -> read(new File(files, "debian/last-error.txt")).contains("ARM translation"),
+                await(() -> launcherError.lastModified() != previousErrorTime
+                        && read(launcherError).contains("ARM translation"),
                     "Translation limitation was not explained");
                 require(!rootfs.exists(), "Unsupported device installed a rootfs");
                 require(applicationProcesses("debian").size() == 1, "The explanation tab vanished");
+                SystemClock.sleep(1000); // Allow the PTY explanation to reach the rendered frame.
                 screenshot("plebdroid-debian-unsupported.png");
                 passed.add("ARM translation gets a visible explanation before installation");
             } else {
