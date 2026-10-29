@@ -9,8 +9,9 @@
 # namespaces with /etc/subuid and /etc/subgid ranges, debian-archive-keyring,
 # xz-utils 5.8.x, python3, and, on a non-arm64 host, qemu-user-binfmt.
 # Packages come from snapshot.debian.org, so the same snapshot and options give
-# the same tar. The tar and the xz digests are checked against
-# native/debian/pins.json; a mismatch fails and leaves the files for review.
+# the same tar. The signed InRelease files, the tar, and the xz digests are
+# checked against native/debian/pins.json. An InRelease mismatch fails before
+# mmdebstrap. A tar or xz mismatch fails and leaves the files for review.
 set -eu
 
 [ $# -eq 1 ] || { echo "usage: $0 OUTPUT_DIR" >&2; exit 2; }
@@ -25,6 +26,8 @@ SNAPSHOT=$(pin snapshot)
 INCLUDE=$(pin include)
 TAR_SHA256=$(pin tar_sha256)
 XZ_SHA256=$(pin xz_sha256)
+RELEASE_SHA256=$(pin release_sha256)
+SECURITY_RELEASE_SHA256=$(pin security_release_sha256)
 TAR="$OUT/debian-trixie-arm64-$SNAPSHOT.tar"
 
 for tool in mmdebstrap xz sha256sum python3; do
@@ -47,6 +50,22 @@ SOURCES_HOOK='printf "Types: deb\nURIs: https://deb.debian.org/debian\nSuites: t
 # produce the same bytes; the launcher binds Android's DNS over resolv.conf.
 IDENTITY_HOOK='printf "plebdroid\n" > "$1"/etc/hostname; printf "127.0.0.1\tlocalhost\n::1\tlocalhost ip6-localhost ip6-loopback\n127.0.1.1\tplebdroid\n" > "$1"/etc/hosts; printf "# Plebdroid binds the active Android network DNS servers over this file.\n" > "$1"/etc/resolv.conf; mkdir -p "$1"/root/Documents'
 SNAP=https://snapshot.debian.org/archive
+
+# release_sha256 is the clearsigned InRelease, not the unsigned Release file.
+verify_inrelease() {
+    python3 -I -c '
+import hashlib, sys, urllib.request
+url, expected = sys.argv[1:]
+with urllib.request.urlopen(url, timeout=120) as response:
+    data = response.read()
+digest = hashlib.sha256(data).hexdigest()
+if digest != expected:
+    sys.stderr.write("InRelease sha256 %s does not match the pin %s\n%s\n" % (digest, expected, url))
+    sys.exit(1)
+' "$1" "$2"
+}
+verify_inrelease "$SNAP/debian/$SNAPSHOT/dists/trixie/InRelease" "$RELEASE_SHA256"
+verify_inrelease "$SNAP/debian-security/$SNAPSHOT/dists/trixie-security/InRelease" "$SECURITY_RELEASE_SHA256"
 
 rm -f "$TAR" "$TAR.xz"
 mmdebstrap --mode=unshare --variant=apt --architectures=arm64 \

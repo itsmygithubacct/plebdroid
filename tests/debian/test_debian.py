@@ -612,6 +612,23 @@ class SessionTest(unittest.TestCase):
         status, _ = debian.run_session(debian.Launch(['/bin/sh', '-c', 'exit 7'], {}, '/bin/sh'))
         self.assertEqual(status, 7)
 
+    def test_stopped_child_is_continued(self):
+        def alarm(*_args):
+            raise TimeoutError('stopped child was not continued')
+        previous = signal.signal(signal.SIGALRM, alarm)
+        signal.alarm(10)
+        try:
+            before = signal.getsignal(signal.SIGTSTP)
+            launch = debian.Launch(['/bin/sh', '-c', 'kill -TSTP $$; exit 3'],
+                                   {'PATH': '/usr/bin:/bin'}, '/bin/sh')
+            status, seconds = debian.run_session(launch)
+            self.assertEqual(status, 3)
+            self.assertLess(seconds, 10)
+            self.assertIs(signal.getsignal(signal.SIGTSTP), before)
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, previous)
+
 
 class MainTest(Sandbox):
     def run_main(self, run=None, **kwargs):

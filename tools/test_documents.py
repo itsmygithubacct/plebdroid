@@ -70,6 +70,24 @@ public final class DocumentStoreTest {
         check(DocumentStore.safeName("..\\x\u0000.txt").equals("x.txt"), "display-name normalization");
         String longName = store.importFile(new ByteArrayInputStream(content), "字".repeat(120) + ".txt");
         check(longName.getBytes("UTF-8").length <= 220, "filename exceeds byte limit");
+        int racers = 8;
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(racers);
+        java.util.List<java.util.concurrent.Future<String>> futures = new java.util.ArrayList<>();
+        byte[][] payloads = new byte[racers][];
+        for (int t = 0; t < racers; t++) {
+            payloads[t] = new byte[] {(byte) (t + 1), (byte) (t + 3)};
+            final int id = t;
+            futures.add(pool.submit(() -> store.importFile(new ByteArrayInputStream(payloads[id]), "race.txt")));
+        }
+        pool.shutdown();
+        java.util.Set<String> names = new java.util.HashSet<>();
+        for (int t = 0; t < racers; t++) {
+            String name = futures.get(t).get();
+            check(names.add(name), "concurrent import reused a name");
+            ByteArrayOutputStream got = new ByteArrayOutputStream();
+            store.exportFile(name, got);
+            check(Arrays.equals(payloads[t], got.toByteArray()), "concurrent import replaced bytes");
+        }
         System.out.println("DocumentStore: persistent bytes, collisions, failed-provider cleanup and containment PASS");
     }
     static void check(boolean value, String message) { if (!value) throw new AssertionError(message); }

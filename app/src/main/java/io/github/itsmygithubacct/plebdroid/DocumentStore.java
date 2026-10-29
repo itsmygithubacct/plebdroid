@@ -9,6 +9,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -60,10 +61,21 @@ final class DocumentStore {
             String extension = dot > 0 ? name.substring(dot) : "";
             for (int i = 1; i <= 10000; i++) {
                 String candidate = i == 1 ? name : stem + " (" + i + ")" + extension;
+                Path destination = root.resolve(candidate);
                 try {
-                    Files.move(staging, root.resolve(candidate));
+                    // Reserve the name before the rename. Two imports can otherwise
+                    // both choose it, and one rename replaces the other's bytes.
+                    Files.createFile(destination);
+                } catch (FileAlreadyExistsException exists) {
+                    continue;
+                }
+                try {
+                    Files.move(staging, destination, StandardCopyOption.ATOMIC_MOVE);
                     return candidate;
-                } catch (FileAlreadyExistsException exists) { /* Preserve the existing document. */ }
+                } catch (IOException error) {
+                    Files.deleteIfExists(destination);
+                    throw error;
+                }
             }
             throw new IOException("Too many documents have this name");
         } finally { Files.deleteIfExists(staging); }

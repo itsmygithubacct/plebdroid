@@ -1,17 +1,11 @@
-# Plebian-OS installer artwork attribution
+# Plebian-OS launcher artwork attribution
 
-This notice applies to the artwork in this directory:
+This notice applies to the artwork packaged with Plebdroid:
 
-- `logo.svg`
-- `logo.png`
-- `splash.png`
-- `banner.png`
-- `banner-dark.png`
+- [`../../assets/branding/logo.svg`](../../assets/branding/logo.svg), the editable angular-P mark
+- [`../../app/src/main/res/drawable-nodpi/plebdroid_logo.png`](../../app/src/main/res/drawable-nodpi/plebdroid_logo.png), the launcher icon rendered from that mark
 
-It also applies to the shared Ceratopsian-derived desktop treatment at
-`../desktop/plebian-os.png`.
-
-The installer remains Debian-based. Plebian-OS and its artwork are not endorsed
+The launcher remains Debian-based. Plebian-OS and its artwork are not endorsed
 by Debian, the Debian Installer Team, or the upstream Ceratopsian artist.
 
 ## License selected for this derivative set
@@ -37,13 +31,12 @@ The complete GPL version 2 text is included in this repository at
 
 ## Debian 13 Ceratopsian source
 
-The layered blue backgrounds in `splash.png`, `banner.png`, and
-`banner-dark.png` derive from Debian 13's Ceratopsian installer artwork. The
-standalone Plebian-OS angular-P mark is an original replacement identity; it
-does not reproduce the Debian swirl.
+The angular-P mark is an original replacement identity. It does not reproduce
+the Debian swirl. Its blue outline follows the Ceratopsian palette used by
+Debian 13's installer artwork.
 
-The following upstream record is preserved verbatim from the Debian source
-metadata used to prepare these release assets:
+The following upstream record is the Debian source metadata for that artwork,
+with the contact mailbox removed:
 
 ```text
 # ceratopsian
@@ -114,36 +107,3 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 On Debian systems, the complete GPL version 2 text is available at
 `/usr/share/common-licenses/GPL-2`. It is also published at
 <https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>.
-
-## Plebian-OS generation and editing record
-
-The Plebian-OS identity was prepared on 2026-07-13 through a
-reference-guided, model-assisted editing workflow:
-
-1. The pinned Debian Ceratopsian splash and `rootskel-gtk` banner were edited
-   to remove Debian's product mark and introduce an angular terminal-P concept.
-2. A model-produced isolated-logo concept was retained. Its checkerboard was
-   embedded pixels, not transparency, so the approved geometry was manually
-   traced into the canonical `logo.svg`.
-3. `logo.png` was rendered with real transparency from that canonical vector.
-4. The banner and splash were edited again using the approved angular-P geek
-   mark as a fixed reference, then deterministically resized and normalized to
-   the Debian Installer runtime contracts.
-
-The private authoring archive is not distributed with this repository. It
-retains the exact prompts, full model outputs, selected intermediate images,
-normalization commands, review notes, and SHA-256 values. Its corresponding
-prompt files are:
-
-```text
-prompts/boot-b-terminal-p.prompt.txt
-prompts/gtk-b-terminal-p.prompt.txt
-prompts/logo-geek-angular-p.prompt.txt
-prompts/banner-geek.prompt.txt
-prompts/installer-splash-geek.prompt.txt
-```
-
-The retained record does not identify a model version, seed, or an exact
-SVG-to-PNG renderer command. Consequently, the prompts are provenance records,
-not a claim that model generation or every export is bit-for-bit reproducible.
-Future artwork revisions must record those details when the tools expose them.

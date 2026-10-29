@@ -169,8 +169,10 @@ enabled. Record proxy use separately from direct network qualification.
 
 The startup lifecycle check requires host Pillow and a debug APK using the
 default teal desktop. It stops Plebdroid, preserves application data, exercises
-sleep and wake, and requires the same application process to render the desktop
-afterward. It leaves the device awake. Keep its evidence outside the checkout:
+sleep and wake, and requires the display to leave the awake state before the
+wake step. The same application process must render the desktop and record
+that the desktop opened. It leaves the device awake. Keep its evidence outside
+the checkout:
 
 ```sh
 python3 tools/test_startup_lifecycle.py --serial DEVICE_SERIAL \

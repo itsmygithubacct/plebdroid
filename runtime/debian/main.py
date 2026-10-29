@@ -747,19 +747,78 @@ def prepare_launch(layout: Layout, source: Source, *, term: str = 'xterm-256colo
     return Launch(argv, env, str(proot))
 
 
+def _controlling_tty() -> int | None:
+    """Return stdin when this process can hand the terminal to the guest."""
+    try:
+        fd = sys.stdin.fileno()
+        if not os.isatty(fd) or os.getsid(0) != os.getpid():
+            return None
+        os.tcgetpgrp(fd)
+    except (AttributeError, OSError, ValueError):
+        return None
+    return fd
+
+
+def _reap(process: subprocess.Popen, group: int | None) -> int:
+    """Wait for the guest, continuing PRoot if Ctrl-Z stopped it."""
+    while True:
+        try:
+            _pid, raw = os.waitpid(process.pid, os.WUNTRACED)
+        except InterruptedError:
+            continue
+        if os.WIFSTOPPED(raw):
+            # The stopped process is PRoot, not a guest job. Leave it stopped
+            # and the launcher waits forever because wait() ignores stops.
+            try:
+                if group:
+                    os.killpg(group, signal.SIGCONT)
+                else:
+                    os.kill(process.pid, signal.SIGCONT)
+            except OSError:
+                pass
+            continue
+        if os.WIFEXITED(raw):
+            status = os.WEXITSTATUS(raw)
+        elif os.WIFSIGNALED(raw):
+            status = -os.WTERMSIG(raw)
+        else:
+            continue
+        process.returncode = status
+        return status
+
+
 def run_session(launch: Launch) -> tuple[int, float]:
     """Run PRoot in the tab and return (exit status, seconds)."""
     started = time.monotonic()
     previous = {}
     # A Python handler (unlike SIG_IGN) resets to the default in the child at
     # exec, so ^C and ^\ reach Debian while this launcher keeps waiting.
+    # SIGTSTP is caught only so the launcher itself does not stop. The reap
+    # loop continues a stopped child; ignoring that stop wedges the tab.
     for number in (signal.SIGINT, signal.SIGQUIT, signal.SIGTSTP):
         previous[number] = signal.signal(number, lambda *_: None)
+    tty = _controlling_tty()
+    group = None
     try:
         process = subprocess.Popen(launch.argv, executable=launch.executable, env=launch.env,
-                                   close_fds=True)
-        status = process.wait()
+                                   close_fds=True, preexec_fn=(os.setpgrp if tty is not None else None))
+        if tty is not None:
+            try:
+                os.setpgid(process.pid, process.pid)
+                os.tcsetpgrp(tty, process.pid)
+                group = process.pid
+            except OSError:
+                try:
+                    os.setpgid(process.pid, os.getpgrp())
+                except OSError:
+                    pass
+        status = _reap(process, group)
     finally:
+        if group is not None and tty is not None:
+            try:
+                os.tcsetpgrp(tty, os.getpgrp())
+            except OSError:
+                pass
         for number, handler in previous.items():
             signal.signal(number, handler)
     return status, time.monotonic() - started

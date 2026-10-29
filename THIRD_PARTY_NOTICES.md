@@ -17,8 +17,9 @@ and the game kit. Additional packaged components retain their license texts:
   with source pins, build recipe, patch and license texts under `native/debian/`
   and `notices/debian/`.
 - The pinned Debian userspace. Each installed package's copyright file is
-  retained under `/usr/share/doc` in the rootfs. Its snapshot and package
-  versions are recorded in `native/debian/pins.json`.
+  retained under `/usr/share/doc` in the rootfs. `native/debian/pins.json`
+  records the snapshot and image digests. In a running system, `dpkg-query -W`
+  lists the installed package versions.
 
 The launcher uses the unchanged Plebian-OS angular-P mark, under GPL-2.0-or-later.
 Its editable SVG and complete original attribution are retained in `assets/branding/`
